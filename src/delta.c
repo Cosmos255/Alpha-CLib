@@ -54,85 +54,71 @@ void *LinkedList_pop(ll *list){
     list->tail = list->tail->prev;
     list->tail->next = NULL;
     list->size--;
-    return pop;
+    
+    void *data = pop->data;
+    free(pop);
+    return data;
+}
+
+void *LinkedList_pop_front(ll *list){
+    if(list == NULL || list->size <= 0)return NULL;
+    Node *pop = list->head;
+    list->head = list->head->next;
+    (list->head == NULL) ? (list->tail = NULL) : (list->head->prev = NULL);
+    list->size--;
+
+    void *data = pop->data;
+    free(pop);
+    return data;
+}
+
+
+void *LinkedList_front(ll *list){
+    if(list == NULL) return NULL;
+    return list->head->data; 
+}
+
+void *LinkedList_back(ll *list){
+    if(list == NULL) return NULL;
+    return list->tail->data; 
+}
+
+
+void *LinkedList_at(ll *list, int pos){
+    if(list == NULL || list->size<=0) return NULL;
+    if(pos >= list->size){
+        fprintf(stderr, "Linked list: Index out of bounds at {%d} where list size {%d}\n", pos, list->size);
+        exit(1);       
+    }
+    if(pos == list->size-1) return list->head->data;
+    Node *current = list->head;
+    while(current->next != NULL && pos){
+        current = current->next;
+    }
+    return current->data;
 }
 
 void LinkedList_insert(ll *list, size_t pos, void *value){
-    if(list = NULL || list->size <=0) return NULL;
+    if(list == NULL || list->size <=0) return;
     Node *current = list->head;
-    while(current != NULL && pos){
+    if(pos >= list->size){
+        LinkedList_push(list, value);
+        return;
+    }
+    while(current->next != NULL && pos){
         current = current->next;
-        offset--;
+        pos--;
     }
     Node *nd  = malloc(sizeof(*nd));
-    *nd = malloc(sizeof(*nd));
+    nd = malloc(sizeof(*nd));
     *nd = (Node){
         .data = value,
-        .next = current->next,
-        .prev = current,
+        .next = current,
+        .prev = current->prev,
     };
-    if(offset >= list->size) 
+    (nd->prev == NULL) ? (list->head = nd) : (nd->prev->next = nd);
+    (nd->next == NULL) ? (list->tail = nd) : (nd->next->prev = nd);
+    list->size++;
 }
-
-
-
-void node_insert(Node *head, size_t offset, void *value){
-    if(head == NULL || offset < 0) return;
-    while(head->next != NULL && offset){ 
-        head = head->next;
-        offset--;
-    }
-    Node *nd = malloc(sizeof(*nd));
-    *nd = (Node){
-        .data = value,
-        .next = head->next,
-        .prev = head,
-    };
-    head->next = nd;
-}
-
-Node node_pop(Node **head){
-    Node nd;
-    if(head == NULL ||*head == NULL) return nd;
-    while((*head)->next != NULL) *head = (*head)->next;
-    nd = **head;
-    if((*head)->prev == NULL) {
-        free(*head);
-        *head = NULL;
-    }else{
-        ((*head)->prev)->next = NULL;
-        free(*head);
-    }
-    return nd;
-}
-//change to pointer to data as idk it makes more sense to want the data not the Node
-Node node_pop_front(Node **head){
-    Node nd;
-    if(head == NULL || *head == NULL) return nd;
-    while((*head)->prev != NULL) *head = (*head)->prev;
-    nd = **head;
-    if((*head)->next == NULL){
-        free(*head);
-        *head = NULL;
-    }else{
-        *head = (*head)->next;
-        free((*head)->prev);
-        (*head)->prev = NULL;
-    }
-    return nd;
-}
-
-//also i didnt add a destructor so scheize
-//maybe add negative offset mode so it goes back it would be interesting 
-void node_remove(Node **head, size_t offset){
-    if(head == NULL || *head == NULL || offset < 0) return;
-
-    Node *current = *head;
-    
-
-
-    while((*head)->next != NULL && offset) *head = (*head)->next;
-}
-
 
 
