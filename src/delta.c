@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -98,7 +99,7 @@ void *LinkedList_at(ll *list, int pos){
     return current->data;
 }
 
-void LinkedList_insert(ll *list, size_t pos, void *value){
+void LinkedList_insert(ll *list, int pos, void *value){
     if(list == NULL || list->size <=0) return;
     Node *current = list->head;
     if(pos >= list->size){
@@ -121,4 +122,22 @@ void LinkedList_insert(ll *list, size_t pos, void *value){
     list->size++;
 }
 
+void *LinkedList_remove(ll *list, int pos){
+    if(list == NULL || list->size <=0) return NULL;
+    if(pos >= list->size){
+        fprintf(stderr, "Linked list remove: Index out of bounds at {%d} where list size {%d}\n", pos, list->size);
+        exit(1);
+    }
+    Node *it = list->head;
+    while(list->head->next != NULL && pos){
+        it = it->next;
+    }
+    void *data = it->data;
+    free(it);
+    return data;
+}
 
+int LinkedList_size(ll *list){
+    if(list == NULL) return -1;
+    return list->size;
+}
