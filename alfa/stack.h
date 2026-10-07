@@ -2,6 +2,10 @@
 #define STACK_H
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 typedef struct Stack Stack;
 
 Stack* stack_create(int capacity);
@@ -18,5 +22,8 @@ void *stack_pop(Stack *s);
 
 void stack_free(Stack *s);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

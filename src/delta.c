@@ -38,6 +38,8 @@ void LinkedList_push(ll *list ,void *value){
     Node *node_alloc = list->head;
     Node *nn = malloc(sizeof(Node));
 
+    *nn = (Node){.data = value};
+
     if(list->head == NULL){
         list->head = nn;
         list->tail = nn;

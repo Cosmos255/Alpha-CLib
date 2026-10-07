@@ -1,6 +1,10 @@
 #ifndef DELTA_H
 #define DELTA_H
 
+#ifdef __cplusplus{
+extern "C"{
+#endif
+
 typedef struct LinkedList LinkedList;
 typedef LinkedList ll;
 
@@ -24,5 +28,9 @@ void LinkedList_insert(ll *list, int pos, void *value);
 void *LinkedList_remove(ll *list, int pos);
 
 int LinkedList_size(ll *list);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

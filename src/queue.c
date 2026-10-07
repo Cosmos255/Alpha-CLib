@@ -7,16 +7,17 @@ struct Queue{
     LinkedList *list;
 };
 
-void queue_create(){
+Queue *queue_create(){
     Queue *q = malloc(sizeof(Queue));
     q->list = LinkedList_create();
+    return q;
 }
 
 void enqueue(Queue *q, void *data){
     LinkedList_push(q->list, data);
 }
 
-void *dequeue(Queue *q, void *data){
+void *dequeue(Queue *q){
     return LinkedList_pop_front(q->list);
 }
 
@@ -33,6 +34,6 @@ int queue_size(Queue *q){
 }
 
 bool queue_isempty(Queue *q){
-    return queue_size(q) > 0;
+    return queue_size(q) <= 0;
 }
 
