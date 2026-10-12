@@ -79,7 +79,8 @@ do{\
     do{\
         if((new_size) < 0) break;\
         if((new_size) < (xs)->size){\
-            while((xs)->size != (new_size)) gamma_remove((xs), (xs)->size-1);}\
+            while((xs)->size != (new_size)) gamma_remove((xs), (xs)->size-1);\
+        }\
         typeof((xs)->data) temp = realloc((xs)->data, (new_size) * sizeof(*(xs)->data));\
         if(temp == NULL && new_size != 0){\
             fprintf(stderr, "error failed to realocate the dynamic array in gamma()\n");\

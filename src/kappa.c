@@ -17,10 +17,6 @@ struct KappaTree{
     comp_fn compare;
 };
 
-
-typedef enum {NOT_FOUND, INVALID_ARGUMENT, ALOCATION_ERROR, OK} KappaStatus;
-
-
 //void (*dest_fn)(void *a, void*b);
 
 //TO DO add the AVL ones and replace inside of kappa with an inspection one
@@ -44,15 +40,16 @@ KappaTree* kappa_create(TreeType t, comp_fn comp , dest_fn destroy){
 }
 
 //uhhh eto this should probably be BTS insert 
-void kappa_insert(KappaTree *tree, void *value){
+KappaStatus kappa_insert(KappaTree *tree, void *value){
     if(tree == NULL || value == NULL){
         fprintf(stderr, "Warning: tried to use insert without passing a tree or a value\n");
-        return;
+        return Err;
     }
     KappaNode *node = malloc(sizeof(KappaNode));
     if(node == NULL){
         frpintf(stderr, "Error allocating mem for Node\n");
         exit(1);
+        return ALOCATION_ERROR;
     }
     *node = (KappaNode){.value=value};
     
@@ -66,7 +63,7 @@ void kappa_insert(KappaTree *tree, void *value){
             int result = tree->compare(parent->value, value);
             if(!result){
                 fprintf(stderr, "Warning the tree doesnt accept identical values this value wont be inserted");
-                return;
+                return Err;
             }
             if(result > 0){
                 if(parent->left == NULL) parent->left = node;
@@ -84,6 +81,7 @@ void kappa_insert(KappaTree *tree, void *value){
         }
     }
     tree->size++;
+    return Ok;
 };
 
 /*
@@ -102,7 +100,7 @@ bool kappa_contains(KappaTree *tree, void *value){
 //if info
  
 
-KappaNode **node_find(KappaTree *tree, void *value){
+KappaNode** node_find(KappaTree *tree, void *value){
     if(tree == NULL || value == NULL){
         printf(stderr, "Warning: kappa_find received tree or value == NULL\n");
         exit(1);
@@ -130,44 +128,16 @@ const void* kappa_find(KappaTree *tree, void *value){
 //1 error 0 ok :3
 //maybe implement some kind of return error
 KappaStatus kappa_erase(KappaTree *tree, void *value){
-    if(tree == NULL || value == NULL){
-        printf(stderr, "Warning: kappa_erase received tree or value == NULL\n");
-        return NULL;
+    void* node = kappa_take(tree, value);
+    if(node == NULL) return NOT_FOUND;
+
+    if(tree->destructor == NULL){
+        printf(stderr, "Usage of kappa_erase without a destructor specified");
+        return NO_DESTRUCTOR;
     }
-    if(tree->root == NULL) return;
-
-    //erase the node so the owner previous parent can change 2nd
-    //search the inorder predecesoor if only 1 child then replace it with that
-
-    KappaNode **node = node_find(tree, value);
-
-    if(node == NULL){
-        printf(stderr, "Warning: kappa_erase received tree or value == NULL\n");
-        return;
-    }
-
-    if(info.target->left == NULL && info.target->right == NULL){
-        if(info.target == tree->root){
-            tree->root = NULL;
-        }else{
-            (info.parent->left == info.target) ? (info.parent->left = NULL) : (info.parent->right = NULL);
-        }
-        free(info.target);
-        tree->size--;
-    }
-
-
-
-
-
-    KappaNode *parent = tree->root;  
-    KappaNode *target = tree->root;
-
-
-
-
-
-}
+    tree->destructor(node);
+    return Ok;
+} 
 
 void* kappa_take(KappaTree *tree, void *value){
     if(tree == NULL || value == NULL){
@@ -175,9 +145,6 @@ void* kappa_take(KappaTree *tree, void *value){
         return NULL;
     }
     if(tree->root == NULL) return;
-
-    //erase the node so the owner previous parent can change 2nd
-    //search the inorder predecesoor if only 1 child then replace it with that
 
     KappaNode **node = node_find(tree, value);
 
@@ -204,15 +171,47 @@ void* kappa_take(KappaTree *tree, void *value){
             tree->size--;
             return value;
         }
-        
+
+        while((*successor)->left != NULL){
+            successor = &(*successor)->left;
+        }
+        KappaNode *temp = (*successor)->right;
+        (*successor)->right = (*node)->right;
+        (*successor)->left = (*node)->left;
+        free(*node);
+        *node = *successor;
+        *successor = temp;
+        tree->size--;
+        return value;
     }
 }
 
-void kappa_min(){}
+const void* kappa_min(KappaTree *tree){
+    if(tree == NULL || tree->root == NULL) return NULL;
+    KappaNode *min = tree->root;
+    while(min->left != NULL){
+        min = min->left;
+    }
+    return min;
+}
 
-void kappa_max(){}
+const void* kappa_max(KappaTree *tree){
+    if(tree == NULL || tree->root == NULL) return NULL;
+    KappaNode *max = tree->root;
+    while(max->right != NULL){
+        max = max->right;
+    }
+    return max;
+}
 
-void* inorder_successor(KappaTree *tree, void *value){
+/*
+void** inorder_successor(KappaNode **node){
+    //so its a pain the idea is you go back until you find root cuz you want to go right at least once then left so on short recursion it is
+    if(node == NULL){
+        printf(stderr, "Warning: inorder succesoor received node == NULL\n");
+        return NULL;
+    }
+    if((*node)->right == NULL) return node;
 
 }
 
@@ -225,10 +224,39 @@ KappaNode* inorder_predecessor(){
 
 }
 
+*/
 
-void kappa_size(){}
-
-void kappa_clear(){
-
+int kappa_size(KappaTree *tree){
+    if(tree == NULL) return -1;
+    return tree->size;
 }
 
+//warning if no destructor defined it will leak memory :3
+//i mean i could add a stack return so it doesnt just dump memory
+void node_clear(KappaNode *node){
+    if(node != NULL){
+        if(node->left != NULL) node_clear(node->left);
+        if(node->right != NULL) node_clear(node->right);
+        //stack_push value to be deleted :3
+        free(node);
+    }
+    return; 
+}
+
+void* kappa_clear(KappaTree *tree){
+    if(tree != NULL){
+        node_clear(tree->root);
+        if(tree->destructor){
+            //destruct
+        }else{
+            //return the stack of data
+        }
+
+        return Ok;
+    }
+    return Err;
+}
+
+void kappa_print(KappaTree *tree){
+    //include the quee from the laptop code and do the print
+}

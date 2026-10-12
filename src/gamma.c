@@ -65,6 +65,7 @@
 
 
 int main(){
+    /*
     gamma(int) arr;
     
     for(int i=0; i<20; i++){
@@ -76,7 +77,7 @@ int main(){
         printf("%d ", i);
     }
     printf("\n");
-
+*/
     /*
      Iota = iterators
      Beta = strings

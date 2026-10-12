@@ -1,6 +1,10 @@
 #ifndef BETA_H
 #define BETA_H
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include <ctype.h>
 #include <stdint.h>
 #include <string.h>
@@ -25,5 +29,9 @@ void sv_chop_right(String_View *sv, uint n);
 void sv_trim(String_View *sv);
 
 String_View sv_delim_chop(String_View *sv, char delim);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
