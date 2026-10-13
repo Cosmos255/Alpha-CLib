@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../alfa/epsilon.h"
-#include "../alfa/delta.h"
+#include <alfa/epsilon.h>
+#include <alfa/delta.h>
 
 typedef struct Node {
     void *data;

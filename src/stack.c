@@ -1,5 +1,5 @@
-#include "../alfa/stack.h"
-#include "../alfa/gamma.h"
+#include <alfa/stack.h>
+#include <alfa/gamma.h>
 #include <stdio.h>
 #include <stdbool.h>
 

@@ -1,5 +1,5 @@
-#include "../alfa/delta.h"
-#include "../alfa/queue.h"
+#include <alfa/delta.h>
+#include <alfa/queue.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
