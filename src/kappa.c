@@ -26,19 +26,21 @@ struct KappaTree{
 //_node are function suppoused to be helper ones meant to be used inside the program
 
 KappaTree* kappa_create(TreeType t, comp_fn comp , dest_fn destroy){
+    if(comp == NULL){
+        fprintf(stderr, "Error: Node comparison function is NULL\n");
+        exit(1);
+    }
     KappaTree *tree = malloc(sizeof(KappaTree));
     if(tree == NULL){
         fprintf(stderr, "Error: couldnt allocate memory for the tree Wrapper\n");
         exit(1);
     }
-    if(comp == NULL){
-        fprintf(stderr, "Error: Node comparison function is NULL\n");
-        exit(1);
-    }
+
     tree->type = t;
     tree->size = 0;
     tree->destructor = destroy;
     tree->compare = comp;
+    tree->root = NULL;
     return tree;
 }
 
@@ -54,38 +56,36 @@ KappaStatus kappa_insert(KappaTree *tree, void *value){
         exit(1);
         return ALOCATION_ERROR;
     }
-    *node = (KappaNode){.value=value};
+    *node = (KappaNode){.value=value, .left=NULL, .right=NULL};
     
-    if(tree->root = NULL){
+    if(tree->root == NULL){
         tree->root = node;
     }else{
         KappaNode *parent = tree->root; //C makes it implict nice :3 Note: IN cpp you must cast it mannualy
         
         //its a bit broken not reall optimised
-        while(parent != NULL){
+        while(1){
             int result = tree->compare(parent->value, value);
-            if(!result){
+            if(result == 0){
+                free(node);
                 //fprintf(stderr, "Warning the tree doesnt accept identical values this value wont be inserted");
                 return Err;
             }
-            if(result > 0){
-                if(parent->left == NULL) parent->left = node;
-                else{
-                    parent = parent->left;
-                    break;
-                }
-            }else{
-                if(parent->right == NULL) parent->right = node;
-                else{ 
-                    parent = parent->right;
-                    break;
-                }
+
+            KappaNode **next = result > 0
+                ? &parent->left
+                : &parent->right;
+
+            if(*next == NULL){
+                *next = node;
+                break;
             }
+            parent = *next;
         }
     }
     tree->size++;
     return Ok;
-};
+}
 
 /*
 void AVL_insert(){
@@ -94,9 +94,9 @@ void AVL_insert(){
 */
 
 bool kappa_contains(KappaTree *tree, void *value){
-    KappaNode *result = kappa_find(tree, value);
-    if(result == NULL) return 0;
-    return 1;
+    KappaNode *result = (KappaNode*)kappa_find(tree, value);
+    if(result != NULL) return 1;
+    return 0;
 }
 
 //only for local use
@@ -109,7 +109,6 @@ KappaNode** node_find(KappaTree *tree, void *value){
         fprintf(stderr, "Warning: kappa_find received tree or value == NULL\n");
         exit(1);
     }
-
     //broken 
     KappaNode **node = &(tree->root);
 
@@ -118,17 +117,19 @@ KappaNode** node_find(KappaTree *tree, void *value){
     while(*node != NULL){
         result = tree->compare((*node)->value, value);
 
-        if(result == 0) break;
+        if(result == 0) return node;
 
-        node = (result > 0) ? &(*node)->left : &(*node)->right;
+        node = (result > 0) 
+            ? &(*node)->left 
+            : &(*node)->right;
     }
-    return node;
+    return NULL;
 }
 
 const void* kappa_find(KappaTree *tree, void *value){
     KappaNode **result = node_find(tree, value);
     if(result == NULL) return NULL;
-    return *result; //idk if it works it might not :3
+    return (*result)->value; //idk if it works it might not :3
 }
 
 //1 error 0 ok :3
@@ -152,45 +153,53 @@ void* kappa_take(KappaTree *tree, void *value){
     }
     if(tree->root == NULL) return NULL;
 
-    KappaNode **node = node_find(tree, value);
+    KappaNode **target = node_find(tree, value);
 
-    if(node == NULL){
+    if(target == NULL){
         fprintf(stderr, "Warning: kappa_erase received tree or value == NULL\n");
         return NULL;
     }
 
     //not best practices
-    value = (*node)->value;
+    value = (*target)->value; //this is the root value idk
 
 
-    if((*node)->left == NULL || (*node)->right == NULL){
-        KappaNode *replacement = ((*node)->left == NULL) ? (*node)->right : (*node)->left;
-        free(*node);
-        *node = replacement;
+    if((*target)->left == NULL || (*target)->right == NULL){
+        KappaNode *replacement = ((*target)->left == NULL) 
+            ? (*target)->right 
+            : (*target)->left;
+        free(*target);
+        *target = replacement;
         tree->size--;
         return value;
     }else{
-        KappaNode **successor = node;
+        KappaNode **successor = target;
         successor = &(*successor)->right;
         if ((*successor)->left == NULL){
-            free(*node);
-            *node = *successor;
-            tree->size--;
-            return value;
-        }
+            KappaNode *temp = *successor;
+            temp->left = (*target)->left;
+            free(*target);
+            *target = temp;
+        }else{
+            while((*successor)->left != NULL){
+                successor = &(*successor)->left;
+            }
+            KappaNode *temp = (*successor)->right; // the temp value
+            KappaNode *replacement = *successor; //the value we put after delete
+            KappaNode *old_target = *target;
 
-        while((*successor)->left != NULL){
-            successor = &(*successor)->left;
+
+            replacement->left = old_target->left;
+            replacement->right = old_target->right;
+            
+            *successor = temp;
+            free(old_target);
+            *target = replacement;
         }
-        KappaNode *temp = (*successor)->right;
-        (*successor)->right = (*node)->right;
-        (*successor)->left = (*node)->left;
-        free(*node);
-        *node = *successor;
-        *successor = temp;
-        tree->size--;
-        return value;
     }
+
+    tree->size--;
+    return value;
 }
 
 const void* kappa_min(KappaTree *tree){
@@ -199,7 +208,7 @@ const void* kappa_min(KappaTree *tree){
     while(min->left != NULL){
         min = min->left;
     }
-    return min;
+    return min->value;
 }
 
 const void* kappa_max(KappaTree *tree){
@@ -208,7 +217,7 @@ const void* kappa_max(KappaTree *tree){
     while(max->right != NULL){
         max = max->right;
     }
-    return max;
+    return max->value;
 }
 
 /*
@@ -240,18 +249,17 @@ int kappa_size(KappaTree *tree){
 
 //warning if no destructor defined it will leak memory :3
 //i mean i could add a stack return so it doesnt just dump memory
-void node_clear(KappaNode *node, void **arr, int index){
+void node_clear(KappaNode *node, void **arr, int *index){
     if(node != NULL){
-        arr[index] = node->value;
-        if(node->left != NULL) node_clear(node->left, arr, index++);
-        if(node->right != NULL) node_clear(node->right, arr, index++);
+        arr[(*index)++] = node->value;
+        if(node->left != NULL) node_clear(node->left, arr, index);
+        if(node->right != NULL) node_clear(node->right, arr, index);
         free(node);        
     }
     return; 
 }
 
-void** kappa_clear(KappaTree *tree){
-    if(tree == NULL) return NULL;
+KappaStatus kappa_clear(KappaTree *tree){
     if(tree->destructor == NULL){
         fprintf(stderr, "Called clear without a specified destructor if this is the intention use release");
         exit(1);
@@ -263,15 +271,20 @@ void** kappa_clear(KappaTree *tree){
             tree->destructor(arr[size-1]);
             size--;
         }
+        free(arr);
+        tree->root = NULL;
+        tree->size = 0;
+        return Ok;
     }
-    return NULL;
+    return Err;
 }
 
 void** kappa_release(KappaTree *tree){
-    if(tree != NULL && tree->size > 0){
+    if(tree != NULL && tree->root != NULL){
         void **arr = malloc(sizeof(*arr)*tree->size);
-        node_clear(tree->root, arr, 0);
+        node_clear(tree->root, arr, &(int){0});
         tree->size = 0;
+        tree->root = NULL;
         return arr;
     }
     return NULL;
@@ -286,21 +299,21 @@ void rsd(KappaNode *node, void **arr, int *index){
 }
 
 void srd(KappaNode *node, void **arr, int *index){
-    if(node->left != NULL) rsd(node->left, arr, index);
+    if(node->left != NULL) srd(node->left, arr, index);
     arr[(*index)++] = node->value;
-    if(node->right != NULL) rsd(node->right, arr, index);
+    if(node->right != NULL) srd(node->right, arr, index);
     return;
 }
 
 void sdr(KappaNode *node, void **arr, int *index){
-    if(node->left != NULL) rsd(node->left, arr, index);
-    if(node->right != NULL) rsd(node->right, arr, index);
+    if(node->left != NULL) sdr(node->left, arr, index);
+    if(node->right != NULL) sdr(node->right, arr, index);
     arr[(*index)++] = node->value;
     return;
 }
 
 void** kappa_traverse(KappaTree *tree, TravMode mode){
-    if(tree == NULL) return NULL;
+    if(tree == NULL || tree->root == NULL) return NULL;
     void **arr = malloc(sizeof(*arr)*tree->size);
     if(arr == NULL) return NULL;
     if(tree->root != NULL){
@@ -309,5 +322,6 @@ void** kappa_traverse(KappaTree *tree, TravMode mode){
         else sdr(tree->root, arr, &(int){0});
         return arr;
     }
+    free(arr);
     return NULL;
 }

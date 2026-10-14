@@ -41,7 +41,7 @@ void* kappa_take(KappaTree *tree, void *value);
 
 
 //Clears the entire tree via destructor
-void** kappa_clear(KappaTree *tree);
+KappaStatus kappa_clear(KappaTree *tree);
 //Clears the tree but returns the values in an array of void pointers
 //NOTE use size to know the size of the arr
 void** kappa_release(KappaTree *tree);
