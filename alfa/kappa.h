@@ -33,6 +33,8 @@ bool kappa_contains(KappaTree *tree, void *value);
 const void* kappa_find(KappaTree *tree, void *value);
 const void* kappa_min(KappaTree *tree);
 const void* kappa_max(KappaTree *tree);
+const void* kappa_ceil(KappaTree *tree, void *value);
+const void* kappa_floor(KappaTree *tree, void *value);
 
 //Deletes the node and its value via destructor
 KappaStatus kappa_erase(KappaTree *tree, void *value);
